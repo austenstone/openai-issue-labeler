@@ -1,0 +1,32 @@
+{
+  "name": "openai-issue-labeler",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc && ncc build lib/main.js",
+    "format": "prettier --write \"**/*.ts\"",
+    "format-check": "prettier --check \"**/*.ts\"",
+    "test": "jest",
+    "act-issue": "act issues -e issue.json -s GH_TOKEN -s OPENAI_API_KEY"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@actions/core": "^1.6.0",
+    "@actions/github": "^5.0.0",
+    "js-yaml": "^4.1.0",
+    "openai": "^2.0.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^27.4.0",
+    "@types/js-yaml": "^4.0.4",
+    "@types/node": "^16.11.7",
+    "@vercel/ncc": "^0.33.1",
+    "jest": "^27.4.7",
+    "prettier": "^2.5.1",
+    "ts-jest": "^27.0.7",
+    "typescript": "^4.5.2"
+  }
+}

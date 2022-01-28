@@ -1,0 +1,30 @@
+name: "OpenAI Labeler"
+description: "Labels issues using OpenAI's Classification API powered by GPT-3 models!"
+author: "GitHub"
+inputs:
+  token:
+    description: "The GITHUB_TOKEN secret"
+    required: true
+  openai-api-key:
+    description: "The OpenAI API key secret"
+    required: true
+  temperature:
+    description: "Higher values mean the model will take more risks."
+    default: "0"
+    required: false
+  model:
+    description: "ID of the engine to use for completion. You can select one of ada, babbage, curie, or davinci."
+    default: "curie"
+    required: false
+  search-model:
+    description: "ID of the engine to use for Search. You can select one of ada, babbage, curie, or davinci."
+    default: "ada"
+    required: false
+
+runs:
+  using: "node12"
+  main: "dist/index.js"
+
+branding:
+  icon: "arrow-up-circle"
+  color: "green"
