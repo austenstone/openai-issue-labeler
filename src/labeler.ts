@@ -1,12 +1,7 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-methods/dist-types/generated/parameters-and-response-types';
-import {
-  Configuration,
-  CreateClassificationRequest,
-  CreateClassificationResponse,
-  OpenAIApi,
-} from 'openai';
+import { Configuration, CreateClassificationRequest, CreateClassificationResponse, OpenAIApi } from 'openai';
 import { AxiosResponse } from 'axios';
 
 type ClientType = ReturnType<typeof github.getOctokit>;
