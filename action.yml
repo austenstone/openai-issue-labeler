@@ -1,6 +1,6 @@
 name: "OpenAI Labeler"
 description: "Labels issues using OpenAI's Classification API powered by GPT-3 models!"
-author: "GitHub"
+author: "Austen Stone"
 inputs:
   token:
     description: "The GITHUB_TOKEN secret"

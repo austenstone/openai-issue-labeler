@@ -1,4 +1,4 @@
-/******/ (() => { // webpackBootstrap
+require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
 /***/ 5272:
@@ -35,104 +35,126 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.run = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const openai_1 = __nccwpck_require__(9211);
-function run() {
+const run = () => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
-    return __awaiter(this, void 0, void 0, function* () {
-        if (!github.context)
-            return core.setFailed("No GitHub context.");
-        if (!github.context.payload)
-            return core.setFailed("No payload. Make sure this is an issue event.");
-        if (!github.context.payload)
-            return core.setFailed("No issue found in the payload. Make sure this is an issue event.");
-        const token = core.getInput("token");
-        const openAiApiKey = core.getInput("openai-api-key");
-        const temperature = parseInt(core.getInput("temperature"));
-        const model = core.getInput("model");
-        const search_model = core.getInput("search-model");
-        const client = github.getOctokit(token);
-        const currentIssue = github.context.payload.issue;
-        const ownerRepo = {
-            owner: github.context.repo.owner,
-            repo: github.context.repo.repo,
-        };
-        const examples = [];
-        const maxExampleLength = 4096;
-        const trim = (str) => str.substring(0, maxExampleLength);
-        if (!token)
-            return core.setFailed("No input 'token'");
-        if (!openAiApiKey)
-            return core.setFailed("No input 'openai-api-key'");
-        if (!currentIssue)
-            return core.setFailed("No issue in event context");
-        core.startGroup('Issue');
-        core.info(JSON.stringify(currentIssue, null, 2));
-        core.endGroup();
-        let issuesResponse;
-        try {
-            issuesResponse = yield client.rest.issues.listForRepo(ownerRepo);
-        }
-        catch (_b) {
-            return core.setFailed("Error getting issues for repo ${ownerRepo.owner}/${ownerRepo.repo}");
-        }
-        const issues = issuesResponse.data;
-        issues.forEach((issue) => {
-            issue.labels.map(l => l.name).forEach((label) => {
-                if (issue.title)
-                    examples.push([trim(issue.title), label]);
-                if (issue.body)
-                    examples.push([trim(issue.body), label]);
-            });
+    if (!github.context)
+        return core.setFailed('No GitHub context.');
+    if (!github.context.payload)
+        return core.setFailed('No payload. Make sure this is an issue event.');
+    if (!github.context.payload.issue)
+        return core.setFailed('No issue found in the payload. Make sure this is an issue event.');
+    const token = core.getInput('token');
+    const openAiApiKey = core.getInput('openai-api-key');
+    const temperature = parseInt(core.getInput('temperature'), 10);
+    const model = core.getInput('model');
+    const searchModel = core.getInput('search-model');
+    const client = github.getOctokit(token);
+    const currentIssue = github.context.payload.issue;
+    const ownerRepo = {
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+    };
+    const examples = [];
+    const maxExampleLength = 4096;
+    const trim = (str) => str.substring(0, maxExampleLength);
+    if (!token)
+        return core.setFailed('No input \'token\'');
+    if (!openAiApiKey)
+        return core.setFailed('No input \'openai-api-key\'');
+    if (!currentIssue)
+        return core.setFailed('No issue in event context');
+    core.startGroup('Issue');
+    core.info(JSON.stringify(currentIssue, null, 2));
+    core.endGroup();
+    let issuesResponse;
+    try {
+        issuesResponse = yield client.rest.issues.listForRepo(ownerRepo);
+    }
+    catch (_b) {
+        return core.setFailed(`Error getting issues for repo ${ownerRepo.owner}/${ownerRepo.repo}`);
+    }
+    const issues = issuesResponse.data;
+    issues.forEach((issue) => {
+        issue.labels
+            .map((l) => (typeof l === 'string') ? l : l.name)
+            .filter((l) => typeof l === 'string')
+            .forEach((label) => {
+            if (issue.title)
+                examples.push([trim(issue.title), label]);
+            if (issue.body)
+                examples.push([trim(issue.body), label]);
         });
-        let labelsResponse;
-        try {
-            labelsResponse = yield client.rest.issues.listLabelsForRepo(ownerRepo);
-        }
-        catch (_c) {
-            return core.setFailed("Error getting issues for repo ${ownerRepo.owner}/${ownerRepo.repo}");
-        }
-        if (labelsResponse.data.length < 1)
-            return core.setFailed("No labels found for repo ${ownerRepo.owner}/${ownerRepo.repo}");
-        const labels = labelsResponse.data.map(label => label.name);
-        labelsResponse.data.forEach(label => {
-            if (label.description && label.description.length > 0) {
-                examples.push([trim(label.description), label.name]);
-            }
-        });
-        const query = `${currentIssue.title || ''}
-${currentIssue.body || ''}
-${((_a = currentIssue.labels.map(l => l.name)) === null || _a === void 0 ? void 0 : _a.join(' ')) || ''}`;
-        const classificationRequest = {
-            search_model,
-            model,
-            temperature,
-            query,
-            labels,
-            examples
-        };
-        core.startGroup('Classification Request');
-        core.info(JSON.stringify(classificationRequest, null, 2));
-        core.endGroup();
-        const configuration = new openai_1.Configuration({ apiKey: openAiApiKey });
-        const openai = new openai_1.OpenAIApi(configuration);
-        let classificationResponse;
-        try {
-            classificationResponse = yield openai.createClassification(classificationRequest);
-        }
-        catch (err) {
-            return core.setFailed(String(err));
-        }
-        const classification = classificationResponse.data;
-        core.notice(`Issue labeled as '${classification.label}'`);
-        if ((currentIssue === null || currentIssue === void 0 ? void 0 : currentIssue.number) && classification.label) {
-            yield client.rest.issues.addLabels(Object.assign(Object.assign({}, ownerRepo), { issue_number: currentIssue === null || currentIssue === void 0 ? void 0 : currentIssue.number, labels: [classification.label] }));
+    });
+    let labelsResponse;
+    try {
+        labelsResponse = yield client.rest.issues.listLabelsForRepo(ownerRepo);
+    }
+    catch (_c) {
+        return core.setFailed(`Error getting issues for repo ${ownerRepo.owner}/${ownerRepo.repo}`);
+    }
+    if (labelsResponse.data.length < 1)
+        return core.setFailed(`No labels found for repo ${ownerRepo.owner}/${ownerRepo.repo}`);
+    const labels = labelsResponse.data.map((label) => label.name);
+    labelsResponse.data.forEach((label) => {
+        if (label.description && label.description.length > 0) {
+            examples.push([trim(label.description), label.name]);
         }
     });
-}
-exports.run = run;
+    const query = `${currentIssue.title || ''}
+${currentIssue.body || ''}
+${((_a = currentIssue.labels.map((l) => l.name)) === null || _a === void 0 ? void 0 : _a.join(' ')) || ''}`;
+    const classificationRequest = {
+        search_model: searchModel,
+        model,
+        temperature,
+        query,
+        labels,
+        examples,
+    };
+    core.startGroup('Classification Request');
+    core.info(JSON.stringify(classificationRequest, null, 2));
+    core.endGroup();
+    const configuration = new openai_1.Configuration({ apiKey: openAiApiKey });
+    const openai = new openai_1.OpenAIApi(configuration);
+    let classificationResponse;
+    try {
+        classificationResponse = yield openai.createClassification(classificationRequest);
+    }
+    catch (err) {
+        return core.setFailed(String(err));
+    }
+    const classification = classificationResponse.data;
+    if (!classification.label)
+        return core.setFailed('No label found in classification response');
+    core.notice(`Issue labeled as '${classification.label}'`);
+    if ((currentIssue === null || currentIssue === void 0 ? void 0 : currentIssue.number) && classification.label) {
+        try {
+            yield client.rest.issues.addLabels(Object.assign(Object.assign({}, ownerRepo), { issue_number: currentIssue === null || currentIssue === void 0 ? void 0 : currentIssue.number, labels: [classification.label] }));
+        }
+        catch (_d) {
+            return core.setFailed(`Error adding label '${classification.label}' to issue ${currentIssue.number}`);
+        }
+    }
+});
+exports["default"] = run;
+
+
+/***/ }),
+
+/***/ 3109:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const labeler_1 = __importDefault(__nccwpck_require__(5272));
+(0, labeler_1.default)();
 
 
 /***/ }),
@@ -15870,7 +15892,7 @@ module.exports = JSON.parse('{"application/1d-interleaved-parityfec":{"source":"
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"_from":"openai@^2.0.2","_id":"openai@2.0.2","_inBundle":false,"_integrity":"sha512-JyvCwi3/yj8OTm7Qbj3RGj8KpCzOQ+Vq6Sn3MqaqFmhGQxTW0LS98YPLwDqK6MRPVGdbx3++cjXDzQ+kqaB6uA==","_location":"/openai","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"openai@^2.0.2","name":"openai","escapedName":"openai","rawSpec":"^2.0.2","saveSpec":null,"fetchSpec":"^2.0.2"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/openai/-/openai-2.0.2.tgz","_shasum":"c0508552e06c269ffcb503a2e204a924b17d2e9d","_spec":"openai@^2.0.2","_where":"C:\\\\Users\\\\auste\\\\source\\\\openai-issue-labeler","author":{"name":"OpenAI"},"bugs":{"url":"https://github.com/openai/openai-node/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.25.0","form-data":"^4.0.0"},"deprecated":false,"description":"Node.js library for the OpenAI API","devDependencies":{"@types/node":"^12.11.5","typescript":"^3.6.4"},"homepage":"https://github.com/openai/openai-node#readme","keywords":["openai","open","ai","gpt-3","gpt3"],"license":"MIT","main":"./dist/index.js","name":"openai","repository":{"type":"git","url":"git+ssh://git@github.com/openai/openai-node.git"},"scripts":{"build":"tsc --outDir dist/"},"types":"./dist/index.d.ts","version":"2.0.2"}');
+module.exports = JSON.parse('{"name":"openai","version":"2.0.2","description":"Node.js library for the OpenAI API","keywords":["openai","open","ai","gpt-3","gpt3"],"repository":{"type":"git","url":"git@github.com:openai/openai-node.git"},"author":"OpenAI","license":"MIT","main":"./dist/index.js","types":"./dist/index.d.ts","scripts":{"build":"tsc --outDir dist/"},"dependencies":{"axios":"^0.25.0","form-data":"^4.0.0"},"devDependencies":{"@types/node":"^12.11.5","typescript":"^3.6.4"}}');
 
 /***/ }),
 
@@ -15920,18 +15942,13 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/
-var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be in strict mode.
-(() => {
-"use strict";
-var exports = __webpack_exports__;
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const labeler_1 = __nccwpck_require__(5272);
-(0, labeler_1.run)();
-
-})();
-
-module.exports = __webpack_exports__;
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	var __webpack_exports__ = __nccwpck_require__(3109);
+/******/ 	module.exports = __webpack_exports__;
+/******/ 	
 /******/ })()
 ;
+//# sourceMappingURL=index.js.map
