@@ -22,5 +22,7 @@ jobs:
           node-version: 14.x
       - run: npm install
       - run: npm run build
-      - run: npm test
-        continue-on-error: true
+      - run: npm run lint
+
+      # - run: npm test
+      #   continue-on-error: true
