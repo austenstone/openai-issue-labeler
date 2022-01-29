@@ -1,4 +1,4 @@
-name: "OpenAI Labeler"
+name: "OpenAI Issue Labeler"
 description: "Labels issues using OpenAI's Classification API powered by GPT-3 models!"
 author: "GitHub"
 inputs:
