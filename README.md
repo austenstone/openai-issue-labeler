@@ -58,9 +58,14 @@ The model uses Labeled data to classify the new piece of data.
     - New Issue body
 
 ### Outputs
-The label! it will be automatically added to your issue.
+The label! It will be automatically added to your issue.
 
-This workflow runs on this repo. Check out the [issues](https://github.com/austenstone/openai-issue-labeler/issues) and feel free to open a new one.
+This [workflow](https://github.com/austenstone/openai-issue-labeler/actions/workflows/usage.yaml) runs on this repo. Check out the [issues](https://github.com/austenstone/openai-issue-labeler/issues) and feel free to open a new one.
 
-## Known Issues ⚠️
+#### Example Issues
+- [We need to add a rate limiter to login](https://github.com/austenstone/openai-issue-labeler/issues/80)
+- [Where are the docs?](https://github.com/austenstone/openai-issue-labeler/issues/37)
+- [Logo in the navbar needs to be bigger](https://github.com/austenstone/openai-issue-labeler/issues/36)
+
+## Known (Actual) Issues ⚠️
 - ~~When issue body is greater than 4096 it causes an error with the OpenAI API.~~
