@@ -40,7 +40,14 @@ const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const openai_1 = __nccwpck_require__(9211);
 function run() {
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
+        if (!github.context)
+            return core.setFailed("No GitHub context.");
+        if (!github.context.payload)
+            return core.setFailed("No payload. Make sure this is an issue event.");
+        if (!github.context.payload)
+            return core.setFailed("No issue found in the payload. Make sure this is an issue event.");
         const token = core.getInput("token");
         const openAiApiKey = core.getInput("openai-api-key");
         const temperature = parseInt(core.getInput("temperature"));
@@ -64,7 +71,13 @@ function run() {
         core.startGroup('Issue');
         core.info(JSON.stringify(currentIssue, null, 2));
         core.endGroup();
-        const issuesResponse = yield client.rest.issues.listForRepo(ownerRepo);
+        let issuesResponse;
+        try {
+            issuesResponse = yield client.rest.issues.listForRepo(ownerRepo);
+        }
+        catch (_b) {
+            return core.setFailed("Error getting issues for repo ${ownerRepo.owner}/${ownerRepo.repo}");
+        }
         const issues = issuesResponse.data;
         issues.forEach((issue) => {
             issue.labels.map(l => l.name).forEach((label) => {
@@ -74,16 +87,24 @@ function run() {
                     examples.push([trim(issue.body), label]);
             });
         });
-        const labelsResponse = yield client.rest.issues.listLabelsForRepo(ownerRepo);
+        let labelsResponse;
+        try {
+            labelsResponse = yield client.rest.issues.listLabelsForRepo(ownerRepo);
+        }
+        catch (_c) {
+            return core.setFailed("Error getting issues for repo ${ownerRepo.owner}/${ownerRepo.repo}");
+        }
+        if (labelsResponse.data.length < 1)
+            return core.setFailed("No labels found for repo ${ownerRepo.owner}/${ownerRepo.repo}");
         const labels = labelsResponse.data.map(label => label.name);
         labelsResponse.data.forEach(label => {
             if (label.description && label.description.length > 0) {
                 examples.push([trim(label.description), label.name]);
             }
         });
-        const query = `${currentIssue.title}
-${currentIssue.body}
-${currentIssue.labels.map(l => l.name).join(' ')}`;
+        const query = `${currentIssue.title || ''}
+${currentIssue.body || ''}
+${((_a = currentIssue.labels.map(l => l.name)) === null || _a === void 0 ? void 0 : _a.join(' ')) || ''}`;
         const classificationRequest = {
             search_model,
             model,

@@ -4,6 +4,9 @@ import { Configuration, CreateClassificationRequest, OpenAIApi } from "openai";
 type ClientType = ReturnType<typeof github.getOctokit>;
 
 export async function run() {
+    if (!github.context) return core.setFailed("No GitHub context.");
+    if (!github.context.payload) return core.setFailed("No payload. Make sure this is an issue event.");
+    if (!github.context.payload) return core.setFailed("No issue found in the payload. Make sure this is an issue event.");
     const token = core.getInput("token");
     const openAiApiKey = core.getInput("openai-api-key");
     const temperature = parseInt(core.getInput("temperature"));
@@ -27,7 +30,12 @@ export async function run() {
     core.info(JSON.stringify(currentIssue, null, 2));
     core.endGroup()
 
-    const issuesResponse = await client.rest.issues.listForRepo(ownerRepo)
+    let issuesResponse;
+    try {
+        issuesResponse = await client.rest.issues.listForRepo(ownerRepo)
+    } catch {
+        return core.setFailed("Error getting issues for repo ${ownerRepo.owner}/${ownerRepo.repo}");
+    }
     const issues = issuesResponse.data;
     issues.forEach((issue: any) => {
         issue.labels.map(l => l.name).forEach((label: string) => {
@@ -36,7 +44,13 @@ export async function run() {
         });
     });
 
-    const labelsResponse = await client.rest.issues.listLabelsForRepo(ownerRepo);
+    let labelsResponse;
+    try {
+        labelsResponse = await client.rest.issues.listLabelsForRepo(ownerRepo);
+    } catch {
+        return core.setFailed("Error getting issues for repo ${ownerRepo.owner}/${ownerRepo.repo}");
+    }
+    if (labelsResponse.data.length < 1) return core.setFailed("No labels found for repo ${ownerRepo.owner}/${ownerRepo.repo}");
     const labels = labelsResponse.data.map(label => label.name);
     labelsResponse.data.forEach(label => {
         if (label.description && label.description.length > 0) {
@@ -44,9 +58,9 @@ export async function run() {
         }
     });
 
-    const query = `${currentIssue.title}
-${currentIssue.body}
-${currentIssue.labels.map(l => l.name).join(' ')}`;
+    const query = `${currentIssue.title || ''}
+${currentIssue.body || ''}
+${currentIssue.labels.map(l => l.name)?.join(' ') || ''}`;
 
     const classificationRequest: CreateClassificationRequest = {
         search_model,
