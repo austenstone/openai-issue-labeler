@@ -33,8 +33,7 @@ That's it. Your issues are now labeled by powerful AI models! 🧠
 ![RobotDancingDanceGIF](https://user-images.githubusercontent.com/22425467/151486237-5a416561-c2e9-4c61-ad56-12d77fca0206.gif)
 
 ## Input Settings
-Various inputs are defined in [`action.yml`](action.yml) to let you configure the labeler:
-See the [Classifications API reference](https://beta.openai.com/docs/api-reference/classifications) for more information.
+Various inputs are defined in [`action.yml`](action.yml) to let you configure the labeler. See the [Classifications API reference](https://beta.openai.com/docs/api-reference/classifications) for more information.
 
 | Name | Description | Default |
 | --- | - | - |
