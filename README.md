@@ -23,7 +23,7 @@ jobs:
   triage:
     runs-on: ubuntu-latest
     steps:
-      - uses: austenstone/openai-issue-labeler@main
+      - uses: austenstone/openai-issue-labeler@v2
         with:
           openai-api-key: "${{ secrets.OPENAI_API_KEY }}"
 ```
