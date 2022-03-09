@@ -36,8 +36,8 @@ Various inputs are defined in [`action.yml`](action.yml) to let you configure th
 
 | Name | Description | Default |
 | --- | - | - |
-| **token** | Token to use to authorize label changes. Typically the GITHUB_TOKEN secret | N/A |
 | **openai&#x2011;api&#x2011;key** | The OpenAI API key secret | N/A |
+| token | Token to use to authorize label changes. | ${{ github.token }} |
 | temperature | Higher values mean the model will take more risks. | `0`
 | model | ID of the engine to use for completion. You can select one of ada, babbage, curie, or davinci. | `curie`
 | search&#x2011;model | ID of the engine to use for Search. You can select one of ada, babbage, curie, or davinci. | `ada`
