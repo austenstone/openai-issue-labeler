@@ -25,7 +25,6 @@ jobs:
     steps:
       - uses: austenstone/openai-issue-labeler@main
         with:
-          token: "${{ secrets.GITHUB_TOKEN }}"
           openai-api-key: "${{ secrets.OPENAI_API_KEY }}"
 ```
 That's it. Your issues are now labeled by powerful AI models! 🧠

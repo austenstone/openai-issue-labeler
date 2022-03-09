@@ -4,7 +4,8 @@ author: "Austen Stone"
 inputs:
   token:
     description: "The GITHUB_TOKEN secret"
-    required: true
+    required: false
+    default: ${{ github.token }}
   openai-api-key:
     description: "The OpenAI API key secret"
     required: true
