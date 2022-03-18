@@ -26,7 +26,7 @@ const run = async (): Promise<void> => {
   const trim = (str): string => str.substring(0, maxExampleLength);
 
   if (!token) return core.setFailed('No input \'token\'');
-  if (!openAiApiKey) return core.setFailed('No input \'openai-api-key\'');
+  if (!openAiApiKey) return core.setFailed(`No input 'openai-api-key'. Set secret 'OPENAI_API_KEY' that you create https://beta.openai.com/account/api-keys.`);
   if (!currentIssue) return core.setFailed('No issue in event context');
 
   core.startGroup('Issue');
