@@ -64,6 +64,3 @@ This [workflow](https://github.com/austenstone/openai-issue-labeler/actions/work
 - [We need to add a rate limiter to login](https://github.com/austenstone/openai-issue-labeler/issues/80)
 - [Where are the docs?](https://github.com/austenstone/openai-issue-labeler/issues/37)
 - [Logo in the navbar needs to be bigger](https://github.com/austenstone/openai-issue-labeler/issues/36)
-
-## Known (Actual) Issues ⚠️
-- ~~When issue body is greater than 4096 it causes an error with the OpenAI API.~~
