@@ -47,12 +47,12 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
     if (!github.context.payload.issue)
         return core.setFailed('No issue found in the payload. Make sure this is an issue event.');
     const token = core.getInput('token');
-    const openAiApiKey = core.getInput('openai-api-key');
+    const apiKey = core.getInput('openai-api-key');
     const temperature = parseInt(core.getInput('temperature'), 10);
     const model = core.getInput('model');
     const searchModel = core.getInput('search-model');
     const client = github.getOctokit(token);
-    const currentIssue = github.context.payload.issue;
+    const issue = github.context.payload.issue;
     const ownerRepo = {
         owner: github.context.repo.owner,
         repo: github.context.repo.repo,
@@ -62,12 +62,12 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
     const trim = (str) => str.substring(0, maxExampleLength);
     if (!token)
         return core.setFailed('No input \'token\'');
-    if (!openAiApiKey)
-        return core.setFailed('No input \'openai-api-key\'');
-    if (!currentIssue)
+    if (!apiKey)
+        return core.setFailed(`No input 'openai-api-key'. Set secret 'OPENAI_API_KEY' that you create https://beta.openai.com/account/api-keys.`);
+    if (!issue)
         return core.setFailed('No issue in event context');
     core.startGroup('Issue');
-    core.info(JSON.stringify(currentIssue, null, 2));
+    core.info(JSON.stringify(issue, null, 2));
     core.endGroup();
     let issuesResponse;
     try {
@@ -77,15 +77,15 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
         return core.setFailed(`Error getting issues for repo ${ownerRepo.owner}/${ownerRepo.repo}`);
     }
     const issues = issuesResponse.data;
-    issues.forEach((issue) => {
-        issue.labels
+    issues.forEach((i) => {
+        i.labels
             .map((l) => (typeof l === 'string') ? l : l.name)
             .filter((l) => typeof l === 'string')
             .forEach((label) => {
-            if (issue.title)
-                examples.push([trim(issue.title), label]);
-            if (issue.body)
-                examples.push([trim(issue.body), label]);
+            if (i.title)
+                examples.push([trim(i.title), label]);
+            if (i.body)
+                examples.push([trim(i.body), label]);
         });
     });
     let labelsResponse;
@@ -103,9 +103,9 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
             examples.push([trim(label.description), label.name]);
         }
     });
-    const query = `${currentIssue.title || ''}
-${currentIssue.body || ''}
-${((_a = currentIssue.labels.map((l) => l.name)) === null || _a === void 0 ? void 0 : _a.join(' ')) || ''}`;
+    const query = `${issue.title || ''}
+${issue.body || ''}
+${((_a = issue.labels.map((l) => l.name)) === null || _a === void 0 ? void 0 : _a.join(' ')) || ''}`;
     const classificationRequest = {
         search_model: searchModel,
         model,
@@ -117,7 +117,7 @@ ${((_a = currentIssue.labels.map((l) => l.name)) === null || _a === void 0 ? voi
     core.startGroup('Classification Request');
     core.info(JSON.stringify(classificationRequest, null, 2));
     core.endGroup();
-    const configuration = new openai_1.Configuration({ apiKey: openAiApiKey });
+    const configuration = new openai_1.Configuration({ apiKey: apiKey });
     const openai = new openai_1.OpenAIApi(configuration);
     let classificationResponse;
     try {
@@ -130,12 +130,12 @@ ${((_a = currentIssue.labels.map((l) => l.name)) === null || _a === void 0 ? voi
     if (!classification.label)
         return core.setFailed('No label found in classification response');
     core.notice(`Issue labeled as '${classification.label}'`);
-    if ((currentIssue === null || currentIssue === void 0 ? void 0 : currentIssue.number) && classification.label) {
+    if (issue.number && classification.label) {
         try {
-            yield client.rest.issues.addLabels(Object.assign(Object.assign({}, ownerRepo), { issue_number: currentIssue === null || currentIssue === void 0 ? void 0 : currentIssue.number, labels: [classification.label] }));
+            yield client.rest.issues.addLabels(Object.assign(Object.assign({}, ownerRepo), { issue_number: issue.number, labels: [classification.label] }));
         }
         catch (_d) {
-            return core.setFailed(`Error adding label '${classification.label}' to issue ${currentIssue.number}`);
+            return core.setFailed(`Error adding label '${classification.label}' to issue ${issue.number}`);
         }
     }
 });
@@ -15892,7 +15892,7 @@ module.exports = JSON.parse('{"application/1d-interleaved-parityfec":{"source":"
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"name":"openai","version":"2.0.2","description":"Node.js library for the OpenAI API","keywords":["openai","open","ai","gpt-3","gpt3"],"repository":{"type":"git","url":"git@github.com:openai/openai-node.git"},"author":"OpenAI","license":"MIT","main":"./dist/index.js","types":"./dist/index.d.ts","scripts":{"build":"tsc --outDir dist/"},"dependencies":{"axios":"^0.25.0","form-data":"^4.0.0"},"devDependencies":{"@types/node":"^12.11.5","typescript":"^3.6.4"}}');
+module.exports = JSON.parse('{"_args":[["openai@2.0.2","C:\\\\Users\\\\auste\\\\source\\\\openai-issue-labeler"]],"_from":"openai@2.0.2","_id":"openai@2.0.2","_inBundle":false,"_integrity":"sha512-JyvCwi3/yj8OTm7Qbj3RGj8KpCzOQ+Vq6Sn3MqaqFmhGQxTW0LS98YPLwDqK6MRPVGdbx3++cjXDzQ+kqaB6uA==","_location":"/openai","_phantomChildren":{},"_requested":{"type":"version","registry":true,"raw":"openai@2.0.2","name":"openai","escapedName":"openai","rawSpec":"2.0.2","saveSpec":null,"fetchSpec":"2.0.2"},"_requiredBy":["/"],"_resolved":"https://registry.npmjs.org/openai/-/openai-2.0.2.tgz","_spec":"2.0.2","_where":"C:\\\\Users\\\\auste\\\\source\\\\openai-issue-labeler","author":{"name":"OpenAI"},"bugs":{"url":"https://github.com/openai/openai-node/issues"},"dependencies":{"axios":"^0.25.0","form-data":"^4.0.0"},"description":"Node.js library for the OpenAI API","devDependencies":{"@types/node":"^12.11.5","typescript":"^3.6.4"},"homepage":"https://github.com/openai/openai-node#readme","keywords":["openai","open","ai","gpt-3","gpt3"],"license":"MIT","main":"./dist/index.js","name":"openai","repository":{"type":"git","url":"git+ssh://git@github.com/openai/openai-node.git"},"scripts":{"build":"tsc --outDir dist/"},"types":"./dist/index.d.ts","version":"2.0.2"}');
 
 /***/ }),
 

@@ -11,12 +11,12 @@ const run = async (): Promise<void> => {
   if (!github.context.payload) return core.setFailed('No payload. Make sure this is an issue event.');
   if (!github.context.payload.issue) return core.setFailed('No issue found in the payload. Make sure this is an issue event.');
   const token = core.getInput('token');
-  const openAiApiKey = core.getInput('openai-api-key');
+  const apiKey = core.getInput('openai-api-key');
   const temperature = parseInt(core.getInput('temperature'), 10);
   const model = core.getInput('model');
   const searchModel = core.getInput('search-model');
   const client: ClientType = github.getOctokit(token);
-  const currentIssue = github.context.payload.issue;
+  const issue = github.context.payload.issue;
   const ownerRepo = {
     owner: github.context.repo.owner,
     repo: github.context.repo.repo,
@@ -26,11 +26,11 @@ const run = async (): Promise<void> => {
   const trim = (str): string => str.substring(0, maxExampleLength);
 
   if (!token) return core.setFailed('No input \'token\'');
-  if (!openAiApiKey) return core.setFailed(`No input 'openai-api-key'. Set secret 'OPENAI_API_KEY' that you create https://beta.openai.com/account/api-keys.`);
-  if (!currentIssue) return core.setFailed('No issue in event context');
+  if (!apiKey) return core.setFailed(`No input 'openai-api-key'. Set secret 'OPENAI_API_KEY' that you create https://beta.openai.com/account/api-keys.`);
+  if (!issue) return core.setFailed('No issue in event context');
 
   core.startGroup('Issue');
-  core.info(JSON.stringify(currentIssue, null, 2));
+  core.info(JSON.stringify(issue, null, 2));
   core.endGroup();
 
   let issuesResponse: RestEndpointMethodTypes['issues']['listForRepo']['response'];
@@ -40,13 +40,13 @@ const run = async (): Promise<void> => {
     return core.setFailed(`Error getting issues for repo ${ownerRepo.owner}/${ownerRepo.repo}`);
   }
   const issues = issuesResponse.data;
-  issues.forEach((issue) => {
-    issue.labels
+  issues.forEach((i) => {
+    i.labels
       .map((l) => (typeof l === 'string') ? l : l.name)
       .filter((l): l is string => typeof l === 'string')
       .forEach((label: string) => {
-        if (issue.title) examples.push([trim(issue.title), label]);
-        if (issue.body) examples.push([trim(issue.body), label]);
+        if (i.title) examples.push([trim(i.title), label]);
+        if (i.body) examples.push([trim(i.body), label]);
       });
   });
 
@@ -64,9 +64,9 @@ const run = async (): Promise<void> => {
     }
   });
 
-  const query = `${currentIssue.title || ''}
-${currentIssue.body || ''}
-${currentIssue.labels.map((l) => l.name)?.join(' ') || ''}`;
+  const query = `${issue.title || ''}
+${issue.body || ''}
+${issue.labels.map((l) => l.name)?.join(' ') || ''}`;
 
   const classificationRequest: CreateClassificationRequest = {
     search_model: searchModel,
@@ -81,7 +81,7 @@ ${currentIssue.labels.map((l) => l.name)?.join(' ') || ''}`;
   core.info(JSON.stringify(classificationRequest, null, 2));
   core.endGroup();
 
-  const configuration = new Configuration({ apiKey: openAiApiKey });
+  const configuration = new Configuration({ apiKey: apiKey });
   const openai = new OpenAIApi(configuration);
 
   let classificationResponse: AxiosResponse<CreateClassificationResponse>;
@@ -94,15 +94,15 @@ ${currentIssue.labels.map((l) => l.name)?.join(' ') || ''}`;
   if (!classification.label) return core.setFailed('No label found in classification response');
   core.notice(`Issue labeled as '${classification.label}'`);
 
-  if (currentIssue?.number && classification.label) {
+  if (issue.number && classification.label) {
     try {
       await client.rest.issues.addLabels({
         ...ownerRepo,
-        issue_number: currentIssue?.number,
+        issue_number: issue.number,
         labels: [classification.label],
       });
     } catch {
-      return core.setFailed(`Error adding label '${classification.label}' to issue ${currentIssue.number}`);
+      return core.setFailed(`Error adding label '${classification.label}' to issue ${issue.number}`);
     }
   }
 };
