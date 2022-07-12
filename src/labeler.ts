@@ -11,7 +11,7 @@ const run = async (): Promise<void> => {
   if (!github.context.payload) return core.setFailed('No payload. Make sure this is an issue event.');
   if (!github.context.payload.issue) return core.setFailed('No issue found in the payload. Make sure this is an issue event.');
   const token = core.getInput('token');
-  const apiKey = core.getInput('openai-api-key');
+  const key = core.getInput('openai-api-key');
   const temperature = parseInt(core.getInput('temperature'), 10);
   const model = core.getInput('model');
   const searchModel = core.getInput('search-model');
@@ -26,7 +26,7 @@ const run = async (): Promise<void> => {
   const trim = (str): string => str.substring(0, maxExampleLength);
 
   if (!token) return core.setFailed('No input \'token\'');
-  if (!apiKey) return core.setFailed(`No input 'openai-api-key'. Set secret 'OPENAI_API_KEY' that you create https://beta.openai.com/account/api-keys.`);
+  if (!key) return core.setFailed(`No input 'openai-api-key'. Set secret 'OPENAI_API_KEY' that you create https://beta.openai.com/account/api-keys.`);
   if (!issue) return core.setFailed('No issue in event context');
 
   core.startGroup('Issue');
@@ -81,7 +81,7 @@ ${issue.labels.map((l) => l.name)?.join(' ') || ''}`;
   core.info(JSON.stringify(classificationRequest, null, 2));
   core.endGroup();
 
-  const configuration = new Configuration({ apiKey: apiKey });
+  const configuration = new Configuration({ apiKey: key });
   const openai = new OpenAIApi(configuration);
 
   let classificationResponse: AxiosResponse<CreateClassificationResponse>;
