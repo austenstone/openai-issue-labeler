@@ -1,5 +1,9 @@
 # OpenAI Issue Labeler 🤖
 
+
+> **Warning**
+> The classification API is deprecated. Need to replace it with https://platform.openai.com/docs/guides/fine-tuning
+
 This GitHub [action](https://docs.github.com/en/actions) labels issues using [OpenAI's Classification API](https://beta.openai.com/docs/guides/classifications) powered by GPT-3 models! We are using [`curie`](https://beta.openai.com/docs/engines/curie) as our completion model and [`ada`](https://beta.openai.com/docs/engines/ada) as the search model.
 
 It uses your existing [labels](https://docs.github.com/en/issues/using-labels-and-milestones-to-track-work/managing-labels) and past GitHub [issues](https://docs.github.com/en/issues) to train a model that can predict the labels of new issues. When someone opens a new issue this action will automatically label it.
