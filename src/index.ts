@@ -79,17 +79,22 @@ const run = async (): Promise<void> => {
     const fineTuneModel = await openai.retrieveFineTune(existingFineTuneModel.id);
     id = fineTuneModel.data.id;
   } else {
-    console.log('Creating new fine-tune model')
-    fs.writeFileSync(FILE_NAME, JSON.stringify(trainingData));
-    const fineTuneFile = await openai.createFile(
-      fs.createReadStream(FILE_NAME) as any,
-      'fine-tune'
-    );
-    const fineTuneModel = await openai.createFineTune({
-      model: 'ada',
-      training_file: fineTuneFile.data.filename,
-    })
-    id = fineTuneModel.data.id;
+    try {
+      console.log('Creating new fine-tune model')
+      fs.writeFileSync(FILE_NAME, JSON.stringify(trainingData));
+      const fineTuneFile = await openai.createFile(
+        fs.createReadStream(FILE_NAME) as any,
+        'fine-tune'
+      );
+      const fineTuneModel = await openai.createFineTune({
+        model: 'ada',
+        training_file: fineTuneFile.data.filename,
+      })
+      id = fineTuneModel.data.id;
+    } catch (e) {
+      console.log(e);
+      return core.setFailed('Error creating fine-tune model');
+    }
   }
   const completion = await openai.createCompletion({
     model: id,
