@@ -20880,14 +20880,20 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
         id = fineTuneModel.data.id;
     }
     else {
-        console.log('Creating new fine-tune model');
-        fs_1.default.writeFileSync(FILE_NAME, JSON.stringify(trainingData));
-        const fineTuneFile = yield openai.createFile(fs_1.default.createReadStream(FILE_NAME), 'fine-tune');
-        const fineTuneModel = yield openai.createFineTune({
-            model: 'ada',
-            training_file: fineTuneFile.data.filename,
-        });
-        id = fineTuneModel.data.id;
+        try {
+            console.log('Creating new fine-tune model');
+            fs_1.default.writeFileSync(FILE_NAME, JSON.stringify(trainingData));
+            const fineTuneFile = yield openai.createFile(fs_1.default.createReadStream(FILE_NAME), 'fine-tune');
+            const fineTuneModel = yield openai.createFineTune({
+                model: 'ada',
+                training_file: fineTuneFile.data.filename,
+            });
+            id = fineTuneModel.data.id;
+        }
+        catch (e) {
+            console.log(e);
+            return core.setFailed('Error creating fine-tune model');
+        }
     }
     const completion = yield openai.createCompletion({
         model: id,
