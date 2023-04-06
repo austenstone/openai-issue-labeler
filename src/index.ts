@@ -71,45 +71,41 @@ const run = async (): Promise<void> => {
   const configuration = new Configuration({ apiKey: key });
   const openai = new OpenAIApi(configuration);
 
-  try {
-    let id: string;
-    const file = new File([JSON.stringify(trainingData)], "foo.txt", {
-      type: "text/plain",
-    });
-    const fineTuneModels = await openai.listFineTunes();
-    const existingFineTuneModel = fineTuneModels.data.data.find((model) => (model.training_files.find((file) => file.filename === 'foo.txt')));
-    if (existingFineTuneModel) {
-      const fineTuneModel = await openai.retrieveFineTune(existingFineTuneModel.id);
-      id = fineTuneModel.data.id;
-    } else {
-      await openai.createFile(file, 'fine-tune');
-      const fineTuneModel = await openai.createFineTune({
-        model: 'ada',
-        training_file: 'foo.txt',
-      })
-      id = fineTuneModel.data.id;
-    }
-    const completion = await openai.createCompletion({
-      model: id,
-      prompt: `${issue.title}`
-    });
-    console.log(completion.data);
-    const label = completion.data.choices[0].text;
+  let id: string;
+  const file = new File([JSON.stringify(trainingData)], "foo.txt", {
+    type: "text/plain",
+  });
+  const fineTuneModels = await openai.listFineTunes();
+  const existingFineTuneModel = fineTuneModels.data.data.find((model) => (model.training_files.find((file) => file.filename === 'foo.txt')));
+  if (existingFineTuneModel) {
+    const fineTuneModel = await openai.retrieveFineTune(existingFineTuneModel.id);
+    id = fineTuneModel.data.id;
+  } else {
+    await openai.createFile(file, 'fine-tune');
+    const fineTuneModel = await openai.createFineTune({
+      model: 'ada',
+      training_file: 'foo.txt',
+    })
+    id = fineTuneModel.data.id;
+  }
+  const completion = await openai.createCompletion({
+    model: id,
+    prompt: `${issue.title}`
+  });
+  console.log(completion.data);
+  const label = completion.data.choices[0].text;
 
-    if (issue.number && label) {
-      try {
-        await client.rest.issues.addLabels({
-          owner: github.context.repo.owner,
-          repo: github.context.repo.repo,
-          issue_number: issue.number,
-          labels: [label],
-        });
-      } catch {
-        return core.setFailed(`Error adding label '${label}' to issue ${issue.number}`);
-      }
+  if (issue.number && label) {
+    try {
+      await client.rest.issues.addLabels({
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+        issue_number: issue.number,
+        labels: [label],
+      });
+    } catch {
+      return core.setFailed(`Error adding label '${label}' to issue ${issue.number}`);
     }
-  } catch (err) {
-    return core.setFailed(String(err));
   }
 };
 
