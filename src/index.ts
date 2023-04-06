@@ -54,6 +54,7 @@ const train = async (client: ClientType): Promise<TrainingData[]> => {
 };
 
 const run = async (): Promise<void> => {
+  const FILE_NAME = 'foo.jsonl';
   if (!github.context) return core.setFailed('No GitHub context.');
   if (!github.context.payload) return core.setFailed('No payload. Make sure this is an issue event.');
   if (!github.context.payload.issue) return core.setFailed('No issue found in the payload. Make sure this is an issue event.');
@@ -78,11 +79,15 @@ const run = async (): Promise<void> => {
     const fineTuneModel = await openai.retrieveFineTune(existingFineTuneModel.id);
     id = fineTuneModel.data.id;
   } else {
-    fs.writeFileSync("foo.txt", JSON.stringify(trainingData));
-    await openai.createFile(fs.createReadStream("foo.txt") as any, 'fine-tune');
+    console.log('Creating new fine-tune model')
+    fs.writeFileSync(FILE_NAME, JSON.stringify(trainingData));
+    const fineTuneFile = await openai.createFile(
+      fs.createReadStream(FILE_NAME) as any,
+      'fine-tune'
+    );
     const fineTuneModel = await openai.createFineTune({
       model: 'ada',
-      training_file: 'foo.txt',
+      training_file: fineTuneFile.data.filename,
     })
     id = fineTuneModel.data.id;
   }

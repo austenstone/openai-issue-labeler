@@ -20852,6 +20852,7 @@ const train = (client) => __awaiter(void 0, void 0, void 0, function* () {
     return examples;
 });
 const run = () => __awaiter(void 0, void 0, void 0, function* () {
+    const FILE_NAME = 'foo.jsonl';
     if (!github.context)
         return core.setFailed('No GitHub context.');
     if (!github.context.payload)
@@ -20879,11 +20880,12 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
         id = fineTuneModel.data.id;
     }
     else {
-        fs_1.default.writeFileSync("foo.txt", JSON.stringify(trainingData));
-        yield openai.createFile(fs_1.default.createReadStream("foo.txt"), 'fine-tune');
+        console.log('Creating new fine-tune model');
+        fs_1.default.writeFileSync(FILE_NAME, JSON.stringify(trainingData));
+        const fineTuneFile = yield openai.createFile(fs_1.default.createReadStream(FILE_NAME), 'fine-tune');
         const fineTuneModel = yield openai.createFineTune({
             model: 'ada',
-            training_file: 'foo.txt',
+            training_file: fineTuneFile.data.filename,
         });
         id = fineTuneModel.data.id;
     }
