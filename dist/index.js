@@ -20805,8 +20805,49 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const openai_1 = __nccwpck_require__(9211);
+const train = (client) => __awaiter(void 0, void 0, void 0, function* () {
+    const examples = [];
+    const maxExampleLength = 4096;
+    const trim = (str) => str.substring(0, maxExampleLength);
+    const issuesResponse = yield client.rest.issues.listForRepo({
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+    });
+    issuesResponse.data.forEach((i) => {
+        i.labels
+            .map((l) => (typeof l === 'string') ? l : l.name)
+            .filter((l) => typeof l === 'string')
+            .forEach((label) => {
+            if (i.title)
+                examples.push({
+                    prompt: trim(i.title),
+                    completion: label,
+                });
+            if (i.body)
+                examples.push({
+                    prompt: trim(i.body),
+                    completion: label,
+                });
+        });
+    });
+    let labelsResponse;
+    labelsResponse = yield client.rest.issues.listLabelsForRepo({
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+    });
+    if (labelsResponse.data.length < 1)
+        throw new Error(`No labels found for repo ${github.context.repo.owner}/${github.context.repo.repo}`);
+    labelsResponse.data.forEach((label) => {
+        if (label.description && label.description.length > 0) {
+            examples.push({
+                prompt: trim(label.description),
+                completion: label.name,
+            });
+        }
+    });
+    return examples;
+});
 const run = () => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     if (!github.context)
         return core.setFailed('No GitHub context.');
     if (!github.context.payload)
@@ -20815,95 +20856,58 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
         return core.setFailed('No issue found in the payload. Make sure this is an issue event.');
     const token = core.getInput('token');
     const key = core.getInput('openai-api-key');
-    const temperature = parseInt(core.getInput('temperature'), 10);
-    const model = core.getInput('model');
-    const searchModel = core.getInput('search-model');
-    const client = github.getOctokit(token);
-    const issue = github.context.payload.issue;
-    const ownerRepo = {
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo,
-    };
-    const examples = [];
-    const maxExampleLength = 4096;
-    const trim = (str) => str.substring(0, maxExampleLength);
     if (!token)
         return core.setFailed('No input \'token\'');
     if (!key)
         return core.setFailed(`No input 'openai-api-key'. Set secret 'OPENAI_API_KEY' that you create https://beta.openai.com/account/api-keys.`);
+    const client = github.getOctokit(token);
+    const issue = github.context.payload.issue;
     if (!issue)
         return core.setFailed('No issue in event context');
-    core.startGroup('Issue');
-    core.info(JSON.stringify(issue, null, 2));
-    core.endGroup();
-    let issuesResponse;
-    try {
-        issuesResponse = yield client.rest.issues.listForRepo(ownerRepo);
-    }
-    catch (_b) {
-        return core.setFailed(`Error getting issues for repo ${ownerRepo.owner}/${ownerRepo.repo}`);
-    }
-    const issues = issuesResponse.data;
-    issues.forEach((i) => {
-        i.labels
-            .map((l) => (typeof l === 'string') ? l : l.name)
-            .filter((l) => typeof l === 'string')
-            .forEach((label) => {
-            if (i.title)
-                examples.push([trim(i.title), label]);
-            if (i.body)
-                examples.push([trim(i.body), label]);
-        });
-    });
-    let labelsResponse;
-    try {
-        labelsResponse = yield client.rest.issues.listLabelsForRepo(ownerRepo);
-    }
-    catch (_c) {
-        return core.setFailed(`Error getting issues for repo ${ownerRepo.owner}/${ownerRepo.repo}`);
-    }
-    if (labelsResponse.data.length < 1)
-        return core.setFailed(`No labels found for repo ${ownerRepo.owner}/${ownerRepo.repo}`);
-    const labels = labelsResponse.data.map((label) => label.name);
-    labelsResponse.data.forEach((label) => {
-        if (label.description && label.description.length > 0) {
-            examples.push([trim(label.description), label.name]);
-        }
-    });
-    const query = `${issue.title || ''}
-${issue.body || ''}
-${((_a = issue.labels.map((l) => l.name)) === null || _a === void 0 ? void 0 : _a.join(' ')) || ''}`;
-    const classificationRequest = {
-        search_model: searchModel,
-        model,
-        temperature,
-        query,
-        labels,
-        examples,
-    };
-    core.startGroup('Classification Request');
-    core.info(JSON.stringify(classificationRequest, null, 2));
-    core.endGroup();
+    const trainingData = yield train(client);
     const configuration = new openai_1.Configuration({ apiKey: key });
     const openai = new openai_1.OpenAIApi(configuration);
-    let classificationResponse;
     try {
-        classificationResponse = yield openai.createClassification(classificationRequest);
+        let id;
+        const file = new File([JSON.stringify(trainingData)], "foo.txt", {
+            type: "text/plain",
+        });
+        const fineTuneModels = yield openai.listFineTunes();
+        const existingFineTuneModel = fineTuneModels.data.data.find((model) => (model.training_files.find((file) => file.filename === 'foo.txt')));
+        if (existingFineTuneModel) {
+            const fineTuneModel = yield openai.retrieveFineTune(existingFineTuneModel.id);
+            id = fineTuneModel.data.id;
+        }
+        else {
+            yield openai.createFile(file, 'fine-tune');
+            const fineTuneModel = yield openai.createFineTune({
+                model: 'ada',
+                training_file: 'foo.txt',
+            });
+            id = fineTuneModel.data.id;
+        }
+        const completion = yield openai.createCompletion({
+            model: id,
+            prompt: `${issue.title}`
+        });
+        console.log(completion.data);
+        const label = completion.data.choices[0].text;
+        if (issue.number && label) {
+            try {
+                yield client.rest.issues.addLabels({
+                    owner: github.context.repo.owner,
+                    repo: github.context.repo.repo,
+                    issue_number: issue.number,
+                    labels: [label],
+                });
+            }
+            catch (_a) {
+                return core.setFailed(`Error adding label '${label}' to issue ${issue.number}`);
+            }
+        }
     }
     catch (err) {
         return core.setFailed(String(err));
-    }
-    const classification = classificationResponse.data;
-    if (!classification.label)
-        return core.setFailed('No label found in classification response');
-    core.notice(`Issue labeled as '${classification.label}'`);
-    if (issue.number && classification.label) {
-        try {
-            yield client.rest.issues.addLabels(Object.assign(Object.assign({}, ownerRepo), { issue_number: issue.number, labels: [classification.label] }));
-        }
-        catch (_d) {
-            return core.setFailed(`Error adding label '${classification.label}' to issue ${issue.number}`);
-        }
     }
 });
 run();
