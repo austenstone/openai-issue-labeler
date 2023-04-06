@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-methods/dist-types/generated/parameters-and-response-types';
 import { Configuration, OpenAIApi } from 'openai';
-
+import fs from 'fs';
 interface TrainingData {
   prompt: string;
   completion: string;
@@ -72,15 +72,14 @@ const run = async (): Promise<void> => {
   const openai = new OpenAIApi(configuration);
 
   let id: string;
-  const file = new File([JSON.stringify(trainingData)], "foo.txt", {
-    type: "text/plain",
-  });
   const fineTuneModels = await openai.listFineTunes();
   const existingFineTuneModel = fineTuneModels.data.data.find((model) => (model.training_files.find((file) => file.filename === 'foo.txt')));
   if (existingFineTuneModel) {
     const fineTuneModel = await openai.retrieveFineTune(existingFineTuneModel.id);
     id = fineTuneModel.data.id;
   } else {
+    fs.writeFileSync("foo.txt", JSON.stringify(trainingData));
+    const file = fs.createReadStream("foo.txt") as any;
     await openai.createFile(file, 'fine-tune');
     const fineTuneModel = await openai.createFineTune({
       model: 'ada',
