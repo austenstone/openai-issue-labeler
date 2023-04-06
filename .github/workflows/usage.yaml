@@ -7,7 +7,7 @@ jobs:
   triage:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./
         with:
           openai-api-key: "${{ secrets.OPENAI_API_KEY }}"
