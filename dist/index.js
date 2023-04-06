@@ -20867,47 +20867,42 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
     const trainingData = yield train(client);
     const configuration = new openai_1.Configuration({ apiKey: key });
     const openai = new openai_1.OpenAIApi(configuration);
-    try {
-        let id;
-        const file = new File([JSON.stringify(trainingData)], "foo.txt", {
-            type: "text/plain",
-        });
-        const fineTuneModels = yield openai.listFineTunes();
-        const existingFineTuneModel = fineTuneModels.data.data.find((model) => (model.training_files.find((file) => file.filename === 'foo.txt')));
-        if (existingFineTuneModel) {
-            const fineTuneModel = yield openai.retrieveFineTune(existingFineTuneModel.id);
-            id = fineTuneModel.data.id;
-        }
-        else {
-            yield openai.createFile(file, 'fine-tune');
-            const fineTuneModel = yield openai.createFineTune({
-                model: 'ada',
-                training_file: 'foo.txt',
-            });
-            id = fineTuneModel.data.id;
-        }
-        const completion = yield openai.createCompletion({
-            model: id,
-            prompt: `${issue.title}`
-        });
-        console.log(completion.data);
-        const label = completion.data.choices[0].text;
-        if (issue.number && label) {
-            try {
-                yield client.rest.issues.addLabels({
-                    owner: github.context.repo.owner,
-                    repo: github.context.repo.repo,
-                    issue_number: issue.number,
-                    labels: [label],
-                });
-            }
-            catch (_a) {
-                return core.setFailed(`Error adding label '${label}' to issue ${issue.number}`);
-            }
-        }
+    let id;
+    const file = new File([JSON.stringify(trainingData)], "foo.txt", {
+        type: "text/plain",
+    });
+    const fineTuneModels = yield openai.listFineTunes();
+    const existingFineTuneModel = fineTuneModels.data.data.find((model) => (model.training_files.find((file) => file.filename === 'foo.txt')));
+    if (existingFineTuneModel) {
+        const fineTuneModel = yield openai.retrieveFineTune(existingFineTuneModel.id);
+        id = fineTuneModel.data.id;
     }
-    catch (err) {
-        return core.setFailed(String(err));
+    else {
+        yield openai.createFile(file, 'fine-tune');
+        const fineTuneModel = yield openai.createFineTune({
+            model: 'ada',
+            training_file: 'foo.txt',
+        });
+        id = fineTuneModel.data.id;
+    }
+    const completion = yield openai.createCompletion({
+        model: id,
+        prompt: `${issue.title}`
+    });
+    console.log(completion.data);
+    const label = completion.data.choices[0].text;
+    if (issue.number && label) {
+        try {
+            yield client.rest.issues.addLabels({
+                owner: github.context.repo.owner,
+                repo: github.context.repo.repo,
+                issue_number: issue.number,
+                labels: [label],
+            });
+        }
+        catch (_a) {
+            return core.setFailed(`Error adding label '${label}' to issue ${issue.number}`);
+        }
     }
 });
 run();
