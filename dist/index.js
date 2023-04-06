@@ -20801,10 +20801,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const openai_1 = __nccwpck_require__(9211);
+const fs_1 = __importDefault(__nccwpck_require__(7147));
 const train = (client) => __awaiter(void 0, void 0, void 0, function* () {
     const examples = [];
     const maxExampleLength = 4096;
@@ -20868,9 +20872,6 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
     const configuration = new openai_1.Configuration({ apiKey: key });
     const openai = new openai_1.OpenAIApi(configuration);
     let id;
-    const file = new File([JSON.stringify(trainingData)], "foo.txt", {
-        type: "text/plain",
-    });
     const fineTuneModels = yield openai.listFineTunes();
     const existingFineTuneModel = fineTuneModels.data.data.find((model) => (model.training_files.find((file) => file.filename === 'foo.txt')));
     if (existingFineTuneModel) {
@@ -20878,7 +20879,8 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
         id = fineTuneModel.data.id;
     }
     else {
-        yield openai.createFile(file, 'fine-tune');
+        fs_1.default.writeFileSync("foo.txt", JSON.stringify(trainingData));
+        yield openai.createFile(fs_1.default.createReadStream("foo.txt"), 'fine-tune');
         const fineTuneModel = yield openai.createFineTune({
             model: 'ada',
             training_file: 'foo.txt',

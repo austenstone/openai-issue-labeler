@@ -79,8 +79,7 @@ const run = async (): Promise<void> => {
     id = fineTuneModel.data.id;
   } else {
     fs.writeFileSync("foo.txt", JSON.stringify(trainingData));
-    const file = fs.createReadStream("foo.txt") as any;
-    await openai.createFile(file, 'fine-tune');
+    await openai.createFile(fs.createReadStream("foo.txt") as any, 'fine-tune');
     const fineTuneModel = await openai.createFineTune({
       model: 'ada',
       training_file: 'foo.txt',
